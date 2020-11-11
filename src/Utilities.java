@@ -3,9 +3,16 @@
 //Programmer: Liam Craft - C3339847
 //Date: 10/11/2020
 
+
+import sun.security.mscapi.CKeyPairGenerator;
+
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Random;
+//import java.nio.charset.StandardCharsets;
 
 public class Utilities {
     //Diffie-Hellman key exchange params
@@ -24,28 +31,60 @@ public class Utilities {
     public static BigInteger modPow(BigInteger base, BigInteger exponent, BigInteger modulus){
         //BigInteger bOne = new BigInteger("1");
         //BigInteger bZero = new BigInteger("0");
+        //TEST
+//        System.out.println("modpow test : entered");
+//        System.out.println("modpow base: "+base);
+//        System.out.println("modpow exponent: "+exponent);
+//        System.out.println("modpow modulus: "+modulus);
         BigInteger result = new BigInteger("1");
         if(modulus.equals(BigInteger.ONE)){
+            //TEST
+            //System.out.println("modpow test modulus = ONE");
             return new BigInteger("0");
         }
         //NOTE: signum returns 1 if the bigint is positive
+        //TEST
+        //System.out.println("test modpow signum: " + exponent.signum());
         while(exponent.signum() == 1){
-            if((exponent.and(BigInteger.ZERO).equals(BigInteger.ONE))){
+            //TEST
+            //System.out.println("****test modpow result (inside loop)****: " + result);
+            if((exponent.and(BigInteger.ONE).equals(BigInteger.ONE))){
                 result = (result.multiply(base)).mod(modulus);
+                //TEST
+                //System.out.println("****test modpow result (inside if inside loop)****: " + result);
             }
             exponent = exponent.shiftRight(1);
             base = (base.multiply(base)).mod(modulus);
         }
+        //TEST
+//        System.out.println("test modpow result: " + result);
         return result;
     }
 
-    //RSA -
-    //NOTE: Large prime should be provided by the server whenever needed
-    public String genRSAPublicKey(BigInteger p, BigInteger q){
-        //n = product of p and q | m = totient = (p - ONE)(q - ONE)
-        //e = 
-        BigInteger n = p.multiply(q);
-        BigInteger totient
+    //RSA - Array index 0 = public, 1 = private.
+    //NOTES:
+    // Large prime should be provided by the server whenever needed
+    //
+
+    public static BigInteger[][] genRSAKeyPair(BigInteger p, BigInteger q){
+        BigInteger result[][] = new BigInteger[2][2];        //result public-private key pair - index 0 = public, 1 = private
+        BigInteger e = new BigInteger("65537");     //Public key given in specs
+        //n = product of p and q () || m = totient = (p - ONE)(q - ONE)
+        //e = public key || d = private key
+        //compute n
+        BigInteger n = p.multiply(q);       //n is used as the modulus for both public and private keys
+        //compute phi(totient)
+        BigInteger phi = p.subtract(BigInteger.ONE).multiply(p.subtract(BigInteger.ONE));
+        //Here you would normally pick e, which should be: positive, smaller than totient and NOT be a factor of totient
+        //NOTE: fixed public key is given in specs = 65537. No need to calc
+        //Select a private key - d
+        BigInteger d = e.modInverse(phi);
+        //assign to result set  0 = (e, n), 1 =  (d, n)
+        result[0][0] = e;
+        result[0][1] = n;
+        result[1][0] = d;
+        result[1][1] = n;
+        return result;
     }
 
     //large prime gen
@@ -55,4 +94,48 @@ public class Utilities {
         return BigInteger.probablePrime(2048/2, rand);
     }
 
+    //Generate RSA signature
+    //input msg should be a hashed value
+    public static BigInteger encodeRSA(BigInteger msg, BigInteger e, BigInteger n){
+        //System.out.println("TEST hashed msg: " + msg.toString());
+        BigInteger result = Utilities.modPow(msg, e, n);
+//        System.out.println("TEST encode result: " + result);
+        return result;
+    }
+
+    //Decode RSA signature
+    //result will be hashed
+    public static BigInteger decodeRSA(BigInteger msg, BigInteger d, BigInteger n){
+        //convert input to bigint
+        //BigInteger biMsg = new BigInteger(msg);
+        //decode using private keys in the modpow method
+        BigInteger result = Utilities.modPow(msg, d, n);
+        return result;
+    }
+
+    //hash stuff SHA256
+    public static BigInteger SHA256Hash(String input){
+        MessageDigest sha256 = null;
+        try{
+            sha256 = MessageDigest.getInstance("SHA-256");
+        }
+        catch(NoSuchAlgorithmException e){
+            System.out.println("Exception in Utilities.SHA256Hash: " + e.getMessage());
+            e.printStackTrace();
+        }
+        byte[] hashed = sha256.digest(input.getBytes(StandardCharsets.UTF_8));
+        return new BigInteger(hashed);
+    }
+
+//    //verify RSA
+//    public static boolean verifyRSA(String original, BigInteger RSAsig){
+//        //hash the clients version of the init message
+//        BigInteger hOriginal = Utilities.SHA256Hash(original);
+//        //decode RSA
+//        BigInteger decodedRSA = Utilities.decodeRSA(RSAsig, );
+//        if(hOriginal.equals(RSAsig)){
+//            return true;
+//        }
+//        return false;
+//    }
 }

@@ -12,16 +12,20 @@ import java.security.SecureRandom;
 public class Server {
     private BigInteger serverP;
     private BigInteger serverQ;
+    private BigInteger[][] serverKeys;      //0(public key, n), 1(private key, n)
+    String input, output, initMessage;
     //Default constructor
     public Server(){
         serverP = Utilities.getLargePrime();
         serverQ = Utilities.getLargePrime();
+        serverKeys = Utilities.genRSAKeyPair(serverQ, serverQ);
     }
 
     //Server constructor
     public Server(BigInteger p, BigInteger q){
         this.serverP = p;
         this.serverQ = q;
+        serverKeys = Utilities.genRSAKeyPair(serverQ, serverQ);
     }
 
     //Server run
@@ -35,17 +39,46 @@ public class Server {
             PrintWriter out = new PrintWriter(sClientSocket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(sClientSocket.getInputStream()));
             //input output message strings
-            String input, output;
+//            String input, output;
             //wait for client message...
             input = in.readLine();
-            out.println("Connection established - ECHO: " + input);
-            out.println("RSAPPublicKey TEST");
+            //loop until init message received
+            while(!input.equalsIgnoreCase("Hello")){
+                out.println("I'm not initialising until you say hello...");
+                input = in.readLine();
+            }
+            initMessage = input;
+            out.println("Connection established");
+            //send server public key - convert to byte array and loop to send
+            //public key
+            out.println(this.serverKeys[0][0].toString());
+            //n value
+            out.println(this.serverKeys[0][1].toString());
+            //send RSA signature
+            //hash the init message
+            BigInteger initHash = Utilities.SHA256Hash(initMessage);
+            //TEST
+            System.out.println("TEST original init client: " + initMessage);
+            //TEST
+            System.out.println("Server initHash test output: " + initHash.toString());
+            //generate sig with hashed message and servers PRIVATE key(in two parts for simplicity)
+            BigInteger serverRSASig = Utilities.encodeRSA(initHash, serverKeys[1][0], serverKeys[1][1]);
+            //TEST
+            System.out.println("Server sig test output: " + serverRSASig.toString());
+            out.println(serverRSASig);
+            //TEST modPow in and out with both keys
+            BigInteger test = Utilities.SHA256Hash(initMessage);
+
+
+            //TODO: Close connection
         }
-        catch(IOException e){
-            System.out.println("IOException in server main: " + e.getMessage());
+        catch(IOException ex){
+            System.out.println("IOException in server main: " + ex.getMessage());
+            ex.printStackTrace();
         }
-        catch(Exception e){
-            System.out.println("Exception in server main: " + e.getMessage());
+        catch(Exception ex){
+            System.out.println("Exception in server main: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
     //Getters and setters
