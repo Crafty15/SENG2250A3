@@ -8,26 +8,10 @@ import java.net.*;
 
 public class ServerMain {
     public static void main(String[] args){
+        //TODO: Args to determine ports?
+       Server s = new Server();
+       s.run();
 
-        //test server socket stuff
-        try {
-            ServerSocket sSocket = new ServerSocket(6969);
-            Socket sClientSocket = sSocket.accept();
-            PrintWriter out = new PrintWriter(sClientSocket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(sClientSocket.getInputStream()));
-
-            String input, output;
-            out.println("Connection established");
-            input = in.readLine();
-            out.println("Server ECHO: " + input);
-
-        }
-        catch(IOException e){
-            System.out.println("IOException in server main: " + e.getMessage());
-        }
-        catch(Exception e){
-            System.out.println("Exception in server main: " + e.getMessage());
-        }
     }
 
 
