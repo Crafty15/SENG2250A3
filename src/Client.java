@@ -6,7 +6,12 @@
 import java.math.BigInteger;
 import java.io.*;
 import java.net.*;
-
+//TEST
+import java.util.Base64;
+import java.util.Random;
+import java.security.SecureRandom;
+import java.util.Base64.Encoder;
+import java.util.Base64.Decoder;
 public class Client {
     private BigInteger[] serverPublicKey;
     private String initMsg;
@@ -86,7 +91,18 @@ public class Client {
             //receive server DH public key
             this.serverPubDHKey = new BigInteger(in.readLine());
             //TEST - output for key exchange
-            System.out.println("Client received server key: " + this.serverPubDHKey);
+            System.out.println("Client received server DH public key: " + this.serverPubDHKey);
+            //********test send byte array***********
+
+
+            byte[] test = new byte[10];
+            Random rand = new SecureRandom();
+            String encTest = Base64.getEncoder().encodeToString(test);
+            rand.nextBytes(test);
+            System.out.println("Byte array cust: "+encTest);
+
+            out.println(encTest);
+            //********test send byte array***********
             //TODO: Close connection
         }
         catch(IOException ex){

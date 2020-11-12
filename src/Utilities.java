@@ -4,7 +4,7 @@
 //Date: 10/11/2020
 
 
-import sun.security.mscapi.CKeyPairGenerator;
+//import sun.security.mscapi.CKeyPairGenerator;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -94,6 +94,7 @@ public class Utilities {
         return result;
     }
 
+
     //large prime gen
     //generate large prime
     public static BigInteger getLargePrime(){
@@ -131,6 +132,8 @@ public class Utilities {
             e.printStackTrace();
         }
         byte[] hashed = sha256.digest(input.getBytes(StandardCharsets.UTF_8));
+        //TEST hased output size - 32 * 8 = 256 bits
+        System.out.println("hashed byte array length: "+hashed.length);
         return new BigInteger(hashed);
     }
 
@@ -152,6 +155,10 @@ public class Utilities {
         return Utilities.modPow(Utilities.getDHg(), privKey, Utilities.getDHp());
     }
 
+    //genHMAC
+//    public static BigInteger genHMAC(BigInteger key, BigInteger msg){
+//
+//    }
 //    //verify RSA
 //    public static boolean verifyRSA(String original, BigInteger RSAsig){
 //        //hash the clients version of the init message
