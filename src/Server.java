@@ -13,12 +13,18 @@ public class Server {
     private BigInteger serverP;
     private BigInteger serverQ;
     private BigInteger[][] serverKeys;      //0(public key, n), 1(private key, n)
+    private BigInteger serverPrivDHKey;
+    private BigInteger serverPubDHKey;
+    private BigInteger sessionKey;
+    private BigInteger clientPubDHKey;
     String input, output, initMessage;
     //Default constructor
     public Server(){
         serverP = Utilities.getLargePrime();
         serverQ = Utilities.getLargePrime();
         serverKeys = Utilities.genRSAKeyPair(serverQ, serverQ);
+        serverPrivDHKey = Utilities.calcDHPrivKey();
+        serverPubDHKey = Utilities.calcDHPubKey(serverPrivDHKey);
     }
 
     //Server constructor
@@ -26,6 +32,8 @@ public class Server {
         this.serverP = p;
         this.serverQ = q;
         serverKeys = Utilities.genRSAKeyPair(serverQ, serverQ);
+        serverPrivDHKey = Utilities.calcDHPrivKey();
+        serverPubDHKey = Utilities.calcDHPubKey(serverPrivDHKey);
     }
 
     //Server run
@@ -58,16 +66,22 @@ public class Server {
             //hash the init message
             BigInteger initHash = Utilities.SHA256Hash(initMessage);
             //TEST
-            System.out.println("TEST original init client: " + initMessage);
+//            System.out.println("TEST original init client: " + initMessage);
             //TEST
-            System.out.println("Server initHash test output: " + initHash.toString());
-            //generate sig with hashed message and servers PRIVATE key(in two parts for simplicity)
-            BigInteger serverRSASig = Utilities.encodeRSA(initHash, serverKeys[1][0], serverKeys[1][1]);
+//            System.out.println("Server initHash test output: " + initHash.toString());
+            //NOTE:Encrypt with public key, decrypt with private
+            //generate sig with hashed message and servers Public key(in two parts for simplicity)
+            BigInteger serverRSASig = Utilities.encodeRSA(initHash, serverKeys[0][0], serverKeys[0][1]);
             //TEST
-            System.out.println("Server sig test output: " + serverRSASig.toString());
+//            System.out.println("Server sig test output: " + serverRSASig.toString());
             out.println(serverRSASig);
-            //TEST modPow in and out with both keys
-            BigInteger test = Utilities.SHA256Hash(initMessage);
+            //receive client DH public key
+            this.clientPubDHKey = new BigInteger(in.readLine());
+            //TEST - output for key exchange
+            System.out.println("Server received client key: " + this.clientPubDHKey);
+            //send server DH public key
+            out.println(this.serverPubDHKey);
+
 
 
             //TODO: Close connection

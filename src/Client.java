@@ -8,26 +8,29 @@ import java.io.*;
 import java.net.*;
 
 public class Client {
-    private BigInteger clientP;
-    private BigInteger clientG;
     private BigInteger[] serverPublicKey;
     private String initMsg;
     private BigInteger serverRSASig;
+    private BigInteger clientPubDHKey;
+    private BigInteger clientPrivDHKey;
+    private BigInteger sessionKey;
+    private BigInteger serverPubDHKey;
+
 
     //Default constructor
     public Client(){
-        clientP = new BigInteger("0");
-        clientG = new BigInteger("0");
         serverPublicKey = new BigInteger[2];
         initMsg = "";
+        clientPrivDHKey = Utilities.calcDHPrivKey();
+        clientPubDHKey = Utilities.calcDHPubKey(clientPrivDHKey);
     }
 
     //Constructor
     public Client(BigInteger p, BigInteger g){
-        this.clientP = p;
-        this.clientG = g;
         serverPublicKey = new BigInteger[2];
         initMsg = "";
+        clientPrivDHKey = Utilities.calcDHPrivKey();
+        clientPubDHKey = Utilities.calcDHPubKey(clientPrivDHKey);
     }
 
     //run Client
@@ -69,10 +72,21 @@ public class Client {
 //            String test = in.readLine();
             serverRSASig = new BigInteger(in.readLine());
             //try to verify the servers signature
-            //TEST
-            System.out.println("Test init msg main: " + initMsg);
-            System.out.println("RSA verify test: " + verifyRSA(initMsg, serverRSASig));
-
+            if(this.verifyRSA(initMsg, serverRSASig)){
+                //server verified
+                System.out.println("Server verified");
+            }
+            else{
+                //Server not verified- close?
+                System.out.println("Server verification failed. Closing....");
+                System.exit(1);
+            }
+            //Send DH public key to server
+            out.println(this.clientPubDHKey);
+            //receive server DH public key
+            this.serverPubDHKey = new BigInteger(in.readLine());
+            //TEST - output for key exchange
+            System.out.println("Client received server key: " + this.serverPubDHKey);
             //TODO: Close connection
         }
         catch(IOException ex){
@@ -89,16 +103,18 @@ public class Client {
     public boolean verifyRSA(String original, BigInteger RSAsig){
         //hash the clients version of the init message
         //TEST
-        System.out.println("TEST original init client: " + original);
+//        System.out.println("TEST original init client: " + original);
         BigInteger hOriginal = Utilities.SHA256Hash(original);
         //TEST
-        System.out.println("TEST hashed original: " + hOriginal);
-        //decode RSA
-        BigInteger decodedRSA = Utilities.decodeRSA(RSAsig, serverPublicKey[0], serverPublicKey[1]);
+//        System.out.println("TEST hashed original: " + hOriginal);
+        //decode RSA - using the hashed original and the server public keys
+        //TODO: decoded RSA does not equal hashed original
+        //BigInteger decodedRSA = Utilities.decodeRSA(RSAsig, serverPublicKey[0], serverPublicKey[1]);
+        BigInteger RSAComparison = Utilities.decodeRSA(hOriginal, serverPublicKey[0], serverPublicKey[1]);
         //TEST
-        System.out.println("TEST decoded RSA: " + decodedRSA);
+//        System.out.println("TEST client generated RSA for comparison: " + RSAComparison);
         //compare the hash values
-        if(hOriginal.equals(RSAsig)){
+        if(RSAComparison.equals(RSAsig)){
             return true;
         }
         return false;
