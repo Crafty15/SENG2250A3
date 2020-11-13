@@ -7,10 +7,10 @@ import java.math.BigInteger;
 import java.io.*;
 import java.net.*;
 import java.util.Base64;
-import java.util.Random;
-import java.security.SecureRandom;
 
 public class Server {
+    private String serverID;
+    private String currentClientId;
     private BigInteger serverP;
     private BigInteger serverQ;
     private BigInteger[][] serverKeys;      //0(public key, n), 1(private key, n)
@@ -19,26 +19,28 @@ public class Server {
     private BigInteger sessionKey;
     private BigInteger clientPubDHKey;
     private byte[] initVector;
-    private String seTestString;
+    private String serverChallengeStr;
+    private byte[] clientChallenge;
     String input, output, initMessage;
     //Default constructor
     public Server(){
+        this.serverID = "TEST_SERVER_0001";
         serverP = Utilities.getLargePrime();
         serverQ = Utilities.getLargePrime();
         serverKeys = Utilities.genRSAKeyPair(serverP, serverQ);
         serverPrivDHKey = Utilities.calcDHPrivKey();
         serverPubDHKey = Utilities.calcDHPubKey(serverPrivDHKey);
-        this.seTestString = "c3339847c3339847";
+        this.serverChallengeStr = "c3339847c3339847c3339847c3339847c3339847c3339847c3339847c3339847";
     }
 
     //Server constructor
-    public Server(BigInteger p, BigInteger q){
-        this.serverP = p;
-        this.serverQ = q;
-        serverKeys = Utilities.genRSAKeyPair(serverP, serverQ);
-        serverPrivDHKey = Utilities.calcDHPrivKey();
-        serverPubDHKey = Utilities.calcDHPubKey(serverPrivDHKey);
-    }
+//    public Server(BigInteger p, BigInteger q){
+//        this.serverP = p;
+//        this.serverQ = q;
+//        serverKeys = Utilities.genRSAKeyPair(serverP, serverQ);
+//        serverPrivDHKey = Utilities.calcDHPrivKey();
+//        serverPubDHKey = Utilities.calcDHPubKey(serverPrivDHKey);
+//    }
 
     //Server run
     //TODO: Args to determine ports?
@@ -77,13 +79,17 @@ public class Server {
             //generate sig with hashed message and servers private key(in two parts for simplicity)
             // (hashed hello msg, d, n)
             BigInteger serverRSASig = Utilities.encodeRSA(initHash, serverKeys[1][0], serverKeys[1][1]);
-            //TEST
-//            System.out.println("Server encoded RSA test output: " + serverRSASig.toString());
             out.println(serverRSASig);
+            //****Handshake phase****
+            //Receive and send id's
+            this.currentClientId = in.readLine();
+            //send server id
+            out.println(this.serverID);
+            //***DH key exchange***
             //receive client DH public key
             this.clientPubDHKey = new BigInteger(in.readLine());
 //            //TEST - output for key exchange
-            System.out.println("Server received client DH public key: \n" + this.clientPubDHKey);
+            //System.out.println("Server received client DH public key: \n" + this.clientPubDHKey);
 //            //send server DH public key
             out.println(this.serverPubDHKey);
             //calc DH session key
@@ -91,7 +97,37 @@ public class Server {
             //receive IV from client
             this.initVector = Base64.getDecoder().decode(in.readLine());
             //test encryption with challenge response
+            //get challenge from client
+            this.clientChallenge = Base64.getDecoder().decode(in.readLine());
+            //send response to client
+            out.println(Base64.getEncoder().encodeToString(Utilities.CBCEncrypt(this.serverChallengeStr, this.sessionKey, this.initVector)));
+            //Do decryption test
+            //TEST
+            //System.out.println("CBC decrypt server side test: " + Utilities.CBCDecrypt(this.clientChallenge, this.sessionKey, this.initVector));
+            if(Utilities.sesKeyMsgCheck(Utilities.CBCDecrypt(this.clientChallenge, this.sessionKey, this.initVector), this.serverChallengeStr)){
+                System.out.println("Client session key verified.");
+            }
+            else{
+                System.out.println("Error: Client session key verification failed.");
+                System.exit(1);
+            }
+            //data exchange
+            byte[] encryptedMsgOut, encryptedMsgIn;
+            String HMACTagOut = "", HMACTagIn = "";
+            BigInteger bigHMACTagIn;
+            //RECEIVE
+            encryptedMsgIn = Base64.getDecoder().decode(in.readLine());
+            HMACTagIn = in.readLine();
+            //verify HMAC - close connection if false
+            if(!Utilities.verifyHMAC(this.sessionKey, this.currentClientId, new BigInteger(HMACTagIn))){
+                System.out.println("HMAC not verified. Closing connection....");
+                sSocket.close();
+            }
+            //SEND
 
+            //RECEIVE
+
+            //SEND
 
             //TODO: Close connection
         }

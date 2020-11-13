@@ -8,12 +8,10 @@ import java.io.*;
 import java.net.*;
 //TEST
 import java.util.Base64;
-import java.util.Random;
-import java.security.SecureRandom;
-import java.util.Base64.Encoder;
-import java.util.Base64.Decoder;
 
 public class Client {
+    private String clientID;
+    private String currentServerId;
     private BigInteger[] serverRSAKey;
     private String initMsg;
     private BigInteger serverRSASig;
@@ -22,17 +20,20 @@ public class Client {
     private BigInteger sessionKey;
     private BigInteger serverPubDHKey;
     private byte[] initVector;
-    private String ceTestStr;
+    private String clientChallengeStr;
+    private byte[] challengeResponse;
 
 
     //Default constructor
     public Client(){
+        this.clientID = "TEST_CLIENT_1212";
         serverRSAKey = new BigInteger[2];
         initMsg = "";
         clientPrivDHKey = Utilities.calcDHPrivKey();
         clientPubDHKey = Utilities.calcDHPubKey(clientPrivDHKey);
         this.initVector = Utilities.genIV();
-        this.ceTestStr = "c3339847c3339847c3339847c3339847c3339847c3339847c3339847c3339847";
+        this.clientChallengeStr = "c3339847c3339847c3339847c3339847c3339847c3339847c3339847c3339847";
+        this.challengeResponse = null;
     }
 
     //Constructor
@@ -84,6 +85,7 @@ public class Client {
             //TEST
             //System.out.println("Test server received RSA sig: " + serverRSASig.toString());
             //try to verify the servers signature (original msg, received RSA sig, e, n)
+            System.out.println("Client: Verifying RSA signature....");
             if(Utilities.verifyRSA(initMsg, serverRSASig, serverRSAKey[0], serverRSAKey[1])){
                 //server verified
                 System.out.println("Server verified");
@@ -93,23 +95,70 @@ public class Client {
                 System.out.println("Server verification failed. Closing....");
                 System.exit(1);
             }
+            //****Handshake phase****
+            System.out.println("Handshake Phase");
+            System.out.println("----------------");
+            //TODO: Send and receive id's
+            //send client id
+            out.println(this.clientID);
+            //receive server id
+            this.currentServerId = in.readLine();
+            System.out.println("CLient to server:");
+            System.out.println("Client ID: " + this.clientID);
+            System.out.println("Server to client:");
+            System.out.println("Server ID: " + this.currentServerId);
+
+            //***DH key exchange***
             //Send DH public key to server
             out.println(this.clientPubDHKey);
             //TEST - output for DH key exchange
-            System.out.println("Client sent server DH public key: \n" + this.clientPubDHKey);
+            System.out.println("Client sent DH public key to server: \n" + this.clientPubDHKey);
 //            //receive server DH public key
             this.serverPubDHKey = new BigInteger(in.readLine());
 //            //TEST - output for DH key exchange
             System.out.println("Client received server DH public key: \n" + this.serverPubDHKey);
             //calc DH session key
             this.sessionKey = Utilities.calcDHSessionKey(this.serverPubDHKey, this.clientPrivDHKey);
+            //TEST
+            //System.out.println("Client session key = " + this.sessionKey.toString());
             //send IV to server
             out.println(Base64.getEncoder().encodeToString(this.initVector));
             //test encryption with pre-agreed challenge response messages
-            //TEST - cbc tests
-            Utilities.CBCEncrypt(this.ceTestStr, this.sessionKey, this.initVector);
+            //Send encrypted challenge string to server to test encryption
+            out.println(Base64.getEncoder().encodeToString(Utilities.CBCEncrypt(this.clientChallengeStr, this.sessionKey, this.initVector)));
+            System.out.println("Challenge sent to server");
+            //receive servers challenge response
+            this.challengeResponse = Base64.getDecoder().decode(in.readLine());
+            //Do decryption test
+            //TEST
+            //System.out.println("CBC decrypt client side test: " + Utilities.CBCDecrypt(this.challengeResponse, this.sessionKey, this.initVector));
+            if(Utilities.sesKeyMsgCheck(Utilities.CBCDecrypt(this.challengeResponse, this.sessionKey, this.initVector), this.clientChallengeStr)){
+                System.out.println("Server session key verified.");
+            }
+            else{
+                System.out.println("Error: Server session key verification failed.");
+                System.exit(1);
+            }
+            //data exchange
+            byte[] encryptedMsgOut, encryptedMsgIn;
+            String HMACTagOut = "", HMACTagIn = "";
 
+            System.out.println("****Data exchange****");
+            System.out.println("----------------");
+            //client sends encrypted text to server (2 exchanges) - ensure each is 64 bytes
+            //SEND (message and HMAC tag)
+            //create messages
+            toServer = "In cryptography an HMAC is a specific type of message auth code."; //64 bytes
+            encryptedMsgOut = Utilities.CBCEncrypt(toServer, this.sessionKey, this.initVector);
+            HMACTagOut = Utilities.genHMAC(this.sessionKey, this.clientID).toString();
+            //send messages
+            out.println(Base64.getEncoder().encodeToString(encryptedMsgOut));
+            out.println(HMACTagOut);
+            //RECEIVE
+            
+            //SEND
 
+            //RECEIVE
             //TODO: Close connection
         }
         catch(IOException ex){
