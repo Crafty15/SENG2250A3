@@ -32,7 +32,7 @@ public class Client {
         clientPrivDHKey = Utilities.calcDHPrivKey();
         clientPubDHKey = Utilities.calcDHPubKey(clientPrivDHKey);
         this.initVector = Utilities.genIV();
-        this.ceTestStr = "c3339847c3339847";
+        this.ceTestStr = "c3339847c3339847c3339847c3339847c3339847c3339847c3339847c3339847";
     }
 
     //Constructor
@@ -106,7 +106,8 @@ public class Client {
             //send IV to server
             out.println(Base64.getEncoder().encodeToString(this.initVector));
             //test encryption with pre-agreed challenge response messages
-
+            //TEST - cbc tests
+            Utilities.CBCEncrypt(this.ceTestStr, this.sessionKey, this.initVector);
 
 
             //TODO: Close connection

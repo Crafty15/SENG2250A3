@@ -6,6 +6,9 @@
 
 //import sun.security.mscapi.CKeyPairGenerator;
 
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -154,7 +157,7 @@ public class Utilities {
         }
         byte[] hashed = sha256.digest(input.getBytes(StandardCharsets.UTF_8));
         //TEST hased output size - 32 * 8 = 256 bits
-        System.out.println("hashed byte array length: "+hashed.length);
+        System.out.println("SHA256 output: "+hashed.length);
         return new BigInteger(hashed);
     }
 
@@ -191,11 +194,149 @@ public class Utilities {
     }
 
     //Cypher block chain encryption - inputs will always be 16 byte multiples
+    //
     public static byte[] CBCEncrypt(String plainText, BigInteger key, byte[] iVec){
-        String cipherText = "";
-        byte[] cipherResultArr = new byte[64];
+        byte[] cipherText = new byte[16];                     //holds the cipher text in between encryptions
+        byte[] xorPT = new byte[16];                         //holds AES input
+        byte[] cipherResultArr = new byte[64];      //The final result
+        byte[][] ptBlocks = new byte[4][16];        //blocks of plain text
+        byte[][] ctBlocks = new byte[4][16];        //blocks of ciphertext
+        BigInteger hashedKey = Utilities.SHA256Hash(key.toString());
+
+        //TEST
+        System.out.println("Plaintext total bytes: " + plainText.getBytes().length);
+        System.out.println("Hashed key total bytes: " + hashedKey.toString());
+        //
+        //break plaintext into blocks of 16 bytes
+        ptBlocks[0] = plainText.substring(0, 16).getBytes();
+        ptBlocks[1] = plainText.substring(16, 32).getBytes();
+        ptBlocks[2] = plainText.substring(32, 48).getBytes();
+        ptBlocks[3] = plainText.substring(48, 64).getBytes();
+
+        try{
+            Cipher AES = Cipher.getInstance("AES/ECB/NoPadding");
+            AES.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(hashedKey.toByteArray(), "AES"));
+
+            //IV xor plaintext block 1
+            for(int i = 0; i < ptBlocks[0].length; i++){
+                xorPT[i] = (byte) (iVec[i] ^ ptBlocks[0][i]);
+            }
+            //AES encrypt step 1 - xorPT AES result into ciphertext arr
+            cipherText = AES.doFinal(xorPT);
+            //add the first result block to the result array
+            for(int i = 0; i < cipherText.length; i++){
+                ctBlocks[0][i] = cipherText[i];
+            }
+
+            //Ciphertext1 xor plaintext block 2
+            for(int i = 0; i < ptBlocks[1].length; i++){
+                xorPT[i] = (byte) (cipherText[i] ^ ptBlocks[1][i]);
+            }
+            //AES encrypt step 2 - xorPT into ciphertext arr
+            cipherText = AES.doFinal(xorPT);
+            //add the second result block to the result array
+            for(int i = 0; i < cipherText.length; i++){
+                ctBlocks[1][i] = cipherText[i];
+            }
+
+            //CipherText2 xor plaintext block 3
+            for(int i = 0; i < ptBlocks[2].length; i++){
+                xorPT[i] = (byte) (cipherText[i] ^ ptBlocks[2][i]);
+            }
+            //AES encrypt step 3 - xorPT into ciphertext arr
+            cipherText = AES.doFinal(xorPT);
+            //add the third result block to the result array
+            for(int i = 0; i < cipherText.length; i++){
+                ctBlocks[2][i] = cipherText[i];
+            }
+
+            //CipherText3 xor plaintext block 4
+            for(int i = 0; i < ptBlocks[3].length; i++){
+                xorPT[i] = (byte) (cipherText[i] ^ ptBlocks[3][i]);
+            }
+            //AES encrypt step 4 - xorPT into ciphertext arr
+            cipherText = AES.doFinal(xorPT);
+            //add the fourth result block to the result array
+            for(int i = 0; i < cipherText.length; i++){
+                ctBlocks[3][i] = cipherText[i];
+            }
+
+            //add to result array
+            for(int i = 0; i < cipherResultArr.length; i++){
+                if(i < 16){
+                    cipherResultArr[i] = ctBlocks[0][i];
+                }
+                else if(i < 32){
+                    cipherResultArr[i] = ctBlocks[1][i - 16];
+                }
+                else if(i < 48){
+                    cipherResultArr[i] = ctBlocks[2][i - 32];
+                }
+                else{
+                    cipherResultArr[i] = ctBlocks[3][i - 48];
+                }
+            }
+        }
+        catch(NoSuchAlgorithmException ex){
+            System.out.println("NoSuchAlgorithmException in Utilities.CBCEncrypt: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+        catch(NoSuchPaddingException ex){
+            System.out.println("NoSuchPaddingException in Utilities.CBCEncrypt: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+        catch(Exception ex){
+            System.out.println("Exception in Utilities.CBCEncrypt: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+        return cipherResultArr;
     }
 
+    //decrypt CBC
+    public static String CBCDecrypt(byte[] cipherTextArr, BigInteger key, byte[] iVec){
+        String result = "";
+        byte[] cipherText = new byte[16];                     //holds the cipher text in between encryptions
+        byte[] xorCT = new byte[16];                         //holds AES input
+        byte[][] ctBlocks = new byte[4][16];                //blocks of cipher text
+        byte[][] ptBlocks = new byte[4][16];                //Blocks of plain text
+        BigInteger hashedKey = Utilities.SHA256Hash(key.toString());
+
+        //Split cipher text into blocks - will need to apply these to AES in reverse order
+        for(int i = 0; i < cipherTextArr.length; ){
+            if(i < 16){
+                ctBlocks[0][i] = cipherTextArr[i];
+            }
+            else if(i < 32){
+                ctBlocks[1][i - 16] = cipherTextArr[i];
+            }
+            else if(i < 48){
+                ctBlocks[2][i - 32] = cipherTextArr[i];
+            }
+            else{
+                ctBlocks[3][i - 48] = cipherTextArr[i];
+            }
+        }
+
+        try{
+            Cipher AES = Cipher.getInstance("AES/ECB/NoPadding");
+            AES.init(Cipher.DECRYPT_MODE, new SecretKeySpec(hashedKey.toByteArray(), "AES"));
+            //put last block from ctBlocks through AES - then XOR
+
+        }
+        catch(NoSuchAlgorithmException ex){
+            System.out.println("NoSuchAlgorithmException in Utilities.CBCDecrypt: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+        catch(NoSuchPaddingException ex){
+            System.out.println("NoSuchPaddingException in Utilities.CBCDecrypt: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+        catch(Exception ex){
+            System.out.println("Exception in Utilities.CBCDecrypt: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+        return result;
+    }
     //genHMAC -
     // Generate a hashed message auth code. Utilise the existing hashing method
 //    public static BigInteger genHMAC(BigInteger key, BigInteger msg){
