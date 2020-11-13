@@ -48,7 +48,7 @@ public class Utilities {
         BigInteger result = new BigInteger("1");
         if(modulus.equals(BigInteger.ONE)){
             //TEST
-            //System.out.println("modpow test modulus = ONE");
+            System.out.println("modpow test modulus = ONE");
             return new BigInteger("0");
         }
         //NOTE: signum returns 1 if the bigint is positive
@@ -67,28 +67,30 @@ public class Utilities {
         }
         //TEST
 //        System.out.println("**************************");
-//        System.out.println("test modpow result: " + result);
+        //System.out.println("test modpow result: " + result);
 //        System.out.println("**************************");
         return result;
     }
 
     //RSA - Array index 0 = public, 1 = private.
-    public static BigInteger[][] genRSAKeyPair(BigInteger p, BigInteger q){
+    public static BigInteger[][] genRSAKeyPair(BigInteger p, BigInteger g){
         BigInteger result[][] = new BigInteger[2][2];        //result public-private key pair - index 0 = public, 1 = private
         BigInteger e = new BigInteger("65537");     //Public key given in specs
         //n = product of p and q () || m = totient = (p - ONE)(q - ONE)
         //e = public key || d = private key
         //compute n
-        BigInteger n = p.multiply(q);       //n is used as the modulus for both public and private keys
+        BigInteger n = p.multiply(g);       //n is used as the modulus for both public and private keys
         //compute phi(totient)
-        BigInteger phi = p.subtract(BigInteger.ONE).multiply(p.subtract(BigInteger.ONE));
+        BigInteger phi = p.subtract(BigInteger.ONE).multiply(g.subtract(BigInteger.ONE));
         //Here you would normally pick e, which should be: positive, smaller than totient and NOT be a factor of totient
         //NOTE: fixed public key is given in specs = 65537. No need to calc
         //Select a private key - d
         BigInteger d = e.modInverse(phi);
         //assign to result set  0 = (e, n), 1 =  (d, n)
+        //Public parts
         result[0][0] = e;
         result[0][1] = n;
+        //Private parts...lol
         result[1][0] = d;
         result[1][1] = n;
         return result;
@@ -99,26 +101,45 @@ public class Utilities {
     //generate large prime
     public static BigInteger getLargePrime(){
         Random rand = new SecureRandom();
-        return BigInteger.probablePrime(2048/2, rand);
+        return BigInteger.probablePrime(1024, rand);
     }
 
     //Generate RSA signature
-    //input msg should be a hashed value
-    public static BigInteger encodeRSA(BigInteger msg, BigInteger e, BigInteger n){
+    //input msg should be a hashed value - (hashed msg, d - priv key part, n - )
+    public static BigInteger encodeRSA(BigInteger msg, BigInteger d, BigInteger n){
         //System.out.println("TEST hashed msg: " + msg.toString());
-        BigInteger result = Utilities.modPow(msg, e, n);
+        BigInteger result = Utilities.modPow(msg, d, n);
 //        System.out.println("TEST encode result: " + result);
         return result;
     }
 
     //Decode RSA signature
-    //result will be hashed
-    public static BigInteger decodeRSA(BigInteger msg, BigInteger d, BigInteger n){
+    //take the RSA signature, run through modpow along with the server public key parts e, n
+    public static BigInteger decodeRSA(BigInteger msg, BigInteger e, BigInteger n){
         //convert input to bigint
         //BigInteger biMsg = new BigInteger(msg);
         //decode using private keys in the modpow method
-        BigInteger result = Utilities.modPow(msg, d, n);
+        BigInteger result = Utilities.modPow(msg, e, n);
         return result;
+    }
+
+    //verify RSA
+    public static boolean verifyRSA(String original, BigInteger RSAsig, BigInteger e, BigInteger n){
+        //hash the clients version of the init message
+        //TEST
+//        System.out.println("TEST original init client: " + original);
+        BigInteger hOriginal = Utilities.SHA256Hash(original);
+        //TEST
+//        System.out.println("TEST hashed original: " + hOriginal);
+        //decode RSA - using the hashed original and the server public keys
+        //TODO: decoded RSA does not equal hashed original
+        BigInteger decodedRSA = Utilities.decodeRSA(RSAsig, e, n);
+        //Decode the server's provided signature and compare it to the hashed original
+//        BigInteger RSAComparison = Utilities.decodeRSA(hOriginal, keyPart1, keyPart2);
+        //TEST
+//        System.out.println("TEST client decoded RSA for comparison: " + decodedRSA);
+        //compare the hash values
+        return hOriginal.equals(decodedRSA);
     }
 
     //hash stuff SHA256
@@ -155,9 +176,30 @@ public class Utilities {
         return Utilities.modPow(Utilities.getDHg(), privKey, Utilities.getDHp());
     }
 
-    //genHMAC
+    //calc diffie-hellman session key
+    public static BigInteger calcDHSessionKey(BigInteger theirPubKey, BigInteger myPrivKey){
+        return Utilities.modPow(theirPubKey, myPrivKey, Utilities.getDHp());
+    }
+
+    //generate 16 bit initialisation vector
+    public static byte[] genIV(){
+        byte[] result = new byte[16];
+        for(int i = 0; i < 16; i++){
+            result[i] = (byte)(Math.random()*128);
+        }
+        return result;
+    }
+
+    //Cypher block chain encryption - inputs will always be 16 byte multiples
+    public static byte[] CBCEncrypt(String plainText, BigInteger key, byte[] iVec){
+        String cipherText = "";
+        byte[] cipherResultArr = new byte[64];
+    }
+
+    //genHMAC -
+    // Generate a hashed message auth code. Utilise the existing hashing method
 //    public static BigInteger genHMAC(BigInteger key, BigInteger msg){
-//
+//        return
 //    }
 //    //verify RSA
 //    public static boolean verifyRSA(String original, BigInteger RSAsig){

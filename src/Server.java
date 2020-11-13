@@ -18,21 +18,24 @@ public class Server {
     private BigInteger serverPubDHKey;
     private BigInteger sessionKey;
     private BigInteger clientPubDHKey;
+    private byte[] initVector;
+    private String seTestString;
     String input, output, initMessage;
     //Default constructor
     public Server(){
         serverP = Utilities.getLargePrime();
         serverQ = Utilities.getLargePrime();
-        serverKeys = Utilities.genRSAKeyPair(serverQ, serverQ);
+        serverKeys = Utilities.genRSAKeyPair(serverP, serverQ);
         serverPrivDHKey = Utilities.calcDHPrivKey();
         serverPubDHKey = Utilities.calcDHPubKey(serverPrivDHKey);
+        this.seTestString = "c3339847c3339847";
     }
 
     //Server constructor
     public Server(BigInteger p, BigInteger q){
         this.serverP = p;
         this.serverQ = q;
-        serverKeys = Utilities.genRSAKeyPair(serverQ, serverQ);
+        serverKeys = Utilities.genRSAKeyPair(serverP, serverQ);
         serverPrivDHKey = Utilities.calcDHPrivKey();
         serverPubDHKey = Utilities.calcDHPubKey(serverPrivDHKey);
     }
@@ -71,23 +74,23 @@ public class Server {
             //TEST
 //            System.out.println("Server initHash test output: " + initHash.toString());
             //NOTE:Encrypt with public key, decrypt with private
-            //generate sig with hashed message and servers Public key(in two parts for simplicity)
-            BigInteger serverRSASig = Utilities.encodeRSA(initHash, serverKeys[0][0], serverKeys[0][1]);
+            //generate sig with hashed message and servers private key(in two parts for simplicity)
+            // (hashed hello msg, d, n)
+            BigInteger serverRSASig = Utilities.encodeRSA(initHash, serverKeys[1][0], serverKeys[1][1]);
             //TEST
-//            System.out.println("Server sig test output: " + serverRSASig.toString());
+//            System.out.println("Server encoded RSA test output: " + serverRSASig.toString());
             out.println(serverRSASig);
             //receive client DH public key
             this.clientPubDHKey = new BigInteger(in.readLine());
-            //TEST - output for key exchange
-            System.out.println("Server received client DH public key: " + this.clientPubDHKey);
-            //send server DH public key
+//            //TEST - output for key exchange
+            System.out.println("Server received client DH public key: \n" + this.clientPubDHKey);
+//            //send server DH public key
             out.println(this.serverPubDHKey);
-            ////********test send byte array***********
-//            String testInString = in.readLine();
-//            System.out.println("Byte string: "+testInString);
-            byte[] testIn = Base64.getDecoder().decode(in.readLine());
-            System.out.println("Byte array: "+testIn.toString());
-            //********test send byte array***********
+            //calc DH session key
+            this.sessionKey = Utilities.calcDHSessionKey(this.clientPubDHKey, this.serverPrivDHKey);
+            //receive IV from client
+            this.initVector = Base64.getDecoder().decode(in.readLine());
+            //test encryption with challenge response
 
 
             //TODO: Close connection

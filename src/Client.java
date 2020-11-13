@@ -12,31 +12,36 @@ import java.util.Random;
 import java.security.SecureRandom;
 import java.util.Base64.Encoder;
 import java.util.Base64.Decoder;
+
 public class Client {
-    private BigInteger[] serverPublicKey;
+    private BigInteger[] serverRSAKey;
     private String initMsg;
     private BigInteger serverRSASig;
     private BigInteger clientPubDHKey;
     private BigInteger clientPrivDHKey;
     private BigInteger sessionKey;
     private BigInteger serverPubDHKey;
+    private byte[] initVector;
+    private String ceTestStr;
 
 
     //Default constructor
     public Client(){
-        serverPublicKey = new BigInteger[2];
+        serverRSAKey = new BigInteger[2];
         initMsg = "";
         clientPrivDHKey = Utilities.calcDHPrivKey();
         clientPubDHKey = Utilities.calcDHPubKey(clientPrivDHKey);
+        this.initVector = Utilities.genIV();
+        this.ceTestStr = "c3339847c3339847";
     }
 
     //Constructor
-    public Client(BigInteger p, BigInteger g){
-        serverPublicKey = new BigInteger[2];
-        initMsg = "";
-        clientPrivDHKey = Utilities.calcDHPrivKey();
-        clientPubDHKey = Utilities.calcDHPubKey(clientPrivDHKey);
-    }
+//    public Client(BigInteger p, BigInteger g){
+//        serverRSAKey = new BigInteger[2];
+//        initMsg = "";
+//        clientPrivDHKey = Utilities.calcDHPrivKey();
+//        clientPubDHKey = Utilities.calcDHPubKey(clientPrivDHKey);
+//    }
 
     //run Client
     public void run(){
@@ -68,16 +73,18 @@ public class Client {
             System.out.println("Server response: " + fromServer);
             //fromServer = in.readLine();
             //server responds with it's RSA public key
-            //pubkey
-            serverPublicKey[0] = new BigInteger(in.readLine());
+            //pubkey - e
+            serverRSAKey[0] = new BigInteger(in.readLine());
             //n
-            serverPublicKey[1] = new BigInteger(in.readLine());
+            serverRSAKey[1] = new BigInteger(in.readLine());
             //Client responds with it's ID
-            System.out.println("Server to client: RSA_PK =  " + serverPublicKey[0]);
+            System.out.println("Server to client: RSA_PK =  \n" + serverRSAKey[0] + " + " + serverRSAKey[1]);
 //            String test = in.readLine();
             serverRSASig = new BigInteger(in.readLine());
-            //try to verify the servers signature
-            if(this.verifyRSA(initMsg, serverRSASig)){
+            //TEST
+            //System.out.println("Test server received RSA sig: " + serverRSASig.toString());
+            //try to verify the servers signature (original msg, received RSA sig, e, n)
+            if(Utilities.verifyRSA(initMsg, serverRSASig, serverRSAKey[0], serverRSAKey[1])){
                 //server verified
                 System.out.println("Server verified");
             }
@@ -88,21 +95,20 @@ public class Client {
             }
             //Send DH public key to server
             out.println(this.clientPubDHKey);
-            //receive server DH public key
+            //TEST - output for DH key exchange
+            System.out.println("Client sent server DH public key: \n" + this.clientPubDHKey);
+//            //receive server DH public key
             this.serverPubDHKey = new BigInteger(in.readLine());
-            //TEST - output for key exchange
-            System.out.println("Client received server DH public key: " + this.serverPubDHKey);
-            //********test send byte array***********
+//            //TEST - output for DH key exchange
+            System.out.println("Client received server DH public key: \n" + this.serverPubDHKey);
+            //calc DH session key
+            this.sessionKey = Utilities.calcDHSessionKey(this.serverPubDHKey, this.clientPrivDHKey);
+            //send IV to server
+            out.println(Base64.getEncoder().encodeToString(this.initVector));
+            //test encryption with pre-agreed challenge response messages
 
 
-            byte[] test = new byte[10];
-            Random rand = new SecureRandom();
-            String encTest = Base64.getEncoder().encodeToString(test);
-            rand.nextBytes(test);
-            System.out.println("Byte array cust: "+encTest);
 
-            out.println(encTest);
-            //********test send byte array***********
             //TODO: Close connection
         }
         catch(IOException ex){
@@ -115,26 +121,7 @@ public class Client {
         }
     }
 
-    //verify RSA
-    public boolean verifyRSA(String original, BigInteger RSAsig){
-        //hash the clients version of the init message
-        //TEST
-//        System.out.println("TEST original init client: " + original);
-        BigInteger hOriginal = Utilities.SHA256Hash(original);
-        //TEST
-//        System.out.println("TEST hashed original: " + hOriginal);
-        //decode RSA - using the hashed original and the server public keys
-        //TODO: decoded RSA does not equal hashed original
-        //BigInteger decodedRSA = Utilities.decodeRSA(RSAsig, serverPublicKey[0], serverPublicKey[1]);
-        BigInteger RSAComparison = Utilities.decodeRSA(hOriginal, serverPublicKey[0], serverPublicKey[1]);
-        //TEST
-//        System.out.println("TEST client generated RSA for comparison: " + RSAComparison);
-        //compare the hash values
-        if(RSAComparison.equals(RSAsig)){
-            return true;
-        }
-        return false;
-    }
+
 
 
 
