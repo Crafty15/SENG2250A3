@@ -111,25 +111,50 @@ public class Server {
                 System.out.println("Error: Client session key verification failed.");
                 System.exit(1);
             }
-            //data exchange
+            //****data exchange*****
             byte[] encryptedMsgOut, encryptedMsgIn;
             String HMACTagOut = "", HMACTagIn = "";
             BigInteger bigHMACTagIn;
-            //RECEIVE
+
+            //*RECEIVE*
             encryptedMsgIn = Base64.getDecoder().decode(in.readLine());
             HMACTagIn = in.readLine();
             //verify HMAC - close connection if false
             if(!Utilities.verifyHMAC(this.sessionKey, this.currentClientId, new BigInteger(HMACTagIn))){
-                System.out.println("HMAC not verified. Closing connection....");
+                System.out.println("Server has detected a bad HMAC. Closing connection....");
                 sSocket.close();
             }
-            //SEND
+            System.out.println("Decrypted msg: " + Utilities.CBCDecrypt(encryptedMsgIn, this.sessionKey, this.initVector));
 
-            //RECEIVE
+            //*SEND*
+            //create msg
+            output = "Integrity: Guarding against improper information modification***";
+            encryptedMsgOut = Utilities.CBCEncrypt(output, this.sessionKey, this.initVector);
+            HMACTagOut = Utilities.genHMAC(this.sessionKey, this.serverID).toString();
+            out.println(Base64.getEncoder().encodeToString(encryptedMsgOut));
+            out.println(HMACTagOut);
 
-            //SEND
+            //*RECEIVE*
+            encryptedMsgIn = Base64.getDecoder().decode(in.readLine());
+            HMACTagIn = in.readLine();
+            //verify HMAC - close connection if false
+            if(!Utilities.verifyHMAC(this.sessionKey, this.currentClientId, new BigInteger(HMACTagIn))){
+                System.out.println("Server has detected a bad HMAC. Closing connection....");
+                sSocket.close();
+            }
+            System.out.println("Decrypted msg: " + Utilities.CBCDecrypt(encryptedMsgIn, this.sessionKey, this.initVector));
 
-            //TODO: Close connection
+            //*SEND*
+            output = "These three concepts are often referred to as the CIA triad*****";
+            encryptedMsgOut = Utilities.CBCEncrypt(output, this.sessionKey, this.initVector);
+            HMACTagOut = Utilities.genHMAC(this.sessionKey, this.serverID).toString();
+            out.println(Base64.getEncoder().encodeToString(encryptedMsgOut));
+            out.println(HMACTagOut);
+            //Close connection
+            System.out.println("Complete. Closing connection....");
+            in.close();
+            out.close();
+            sSocket.close();
         }
         catch(IOException ex){
             System.out.println("IOException in server main: " + ex.getMessage());
