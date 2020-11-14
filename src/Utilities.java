@@ -20,13 +20,13 @@ public class Utilities {
     //****Class variables****
     //Diffie-Hellman key exchange params
     //DHp - agreed large prime
-    private static BigInteger DHp = new BigInteger("17801190547854226652823756245015999014523215636912067427327445031444" +
+    private static final BigInteger DHp = new BigInteger("17801190547854226652823756245015999014523215636912067427327445031444" +
             "28657887370207706126952521234630795671567847784664499706507709207278" +
             "57050009668388144034129745221171818506047231150039301079959358067395" +
             "34871706631980226201971496652413506094591370759495651467285569060679" +
             "4135837542707371727429551343320695239");
     //DHg - primitive root
-    private static BigInteger DHg = new BigInteger("17406820753240209518581198012352343653860449079456135097849583104059" +
+    private static final BigInteger DHg = new BigInteger("17406820753240209518581198012352343653860449079456135097849583104059" +
             "99534884558231478515974089409507253077970949157594923683005742524387" +
             "61037084473467180148876118103083043754985190983472601550494691329488" +
             "08339549231385000036164648264460849230407872181895999905649609776936" +
@@ -40,7 +40,7 @@ public class Utilities {
         return DHg;
     }
 
-    //****Fast Modular Exponentiation
+    //****Fast Modular Exponentiation****
     public static BigInteger modPow(BigInteger base, BigInteger exponent, BigInteger modulus){
         BigInteger result = new BigInteger("1");
         if(modulus.equals(BigInteger.ONE)){
@@ -59,7 +59,7 @@ public class Utilities {
     //****RSA****
     // Generate an RSA key pair - Array index 0 = public, 1 = private.
     public static BigInteger[][] genRSAKeyPair(BigInteger p, BigInteger g){
-        BigInteger result[][] = new BigInteger[2][2];        //result public-private key pair - index 0 = public, 1 = private
+        BigInteger[][] result = new BigInteger[2][2];        //result public-private key pair - index 0 = public, 1 = private
         BigInteger e = new BigInteger("65537");     //Public key given in specs
         //n = product of p and q () || m = totient = (p - ONE)(q - ONE)
         //e = public key || d = private key
@@ -81,7 +81,7 @@ public class Utilities {
         return result;
     }
 
-    //Generate a psuedo random large prime generator
+    //Generate a psuedo random large prime number of 1024 bits
     public static BigInteger getLargePrime(){
         Random rand = new SecureRandom();
         return BigInteger.probablePrime(1024, rand);
@@ -90,8 +90,7 @@ public class Utilities {
     //Encode a message - creating an RSA signature
     //input msg should be a hashed value - (hashed msg, d - priv key part, n - )
     public static BigInteger encodeRSA(BigInteger msg, BigInteger d, BigInteger n){
-        BigInteger result = Utilities.modPow(msg, d, n);
-        return result;
+        return Utilities.modPow(msg, d, n);
     }
 
     //Decode RSA signature
@@ -100,8 +99,7 @@ public class Utilities {
         //convert input to bigint
         //BigInteger biMsg = new BigInteger(msg);
         //decode using private keys in the modpow method
-        BigInteger result = Utilities.modPow(msg, e, n);
-        return result;
+        return Utilities.modPow(msg, e, n);
     }
 
     //Verify RSA signature
@@ -258,7 +256,7 @@ public class Utilities {
         byte[] AESOutput = new byte[16];                         //holds AES input - reused between blocks
         byte[][] ctBlocks = new byte[4][16];                //blocks of cipher text
         byte[][] ptBlocks = new byte[4][16];                //Blocks of plain text
-        BigInteger hashedKey = Utilities.SHA256Hash(key.toString());;
+        BigInteger hashedKey = Utilities.SHA256Hash(key.toString());
         //Split cipher text into blocks
         for(int i = 0; i < cipherTextArr.length; i++){
             if(i < 16){

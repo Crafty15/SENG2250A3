@@ -87,7 +87,7 @@ public class ServerMain {
 
             //*SEND*
             //create msg
-            output = "Integrity: Guarding against improper information modification***";
+            output = "Integrity- Guarding against improper information modification***";
             encryptedMsgOut = Utilities.CBCEncrypt(output, s.getSessionKey(), s.getInitVector());
             HMACTagOut = Utilities.genHMAC(s.getSessionKey(), s.getServerID()).toString();
             out.println(Base64.getEncoder().encodeToString(encryptedMsgOut));

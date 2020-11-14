@@ -143,7 +143,7 @@ public class ClientMain {
             //client sends encrypted text to server (2 exchanges) - ensure each is 64 bytes
             //*SEND* (message and HMAC tag)
             //create messages
-            c.setToServer("Confidentiality:Preserving authorized restrictions on info******"); //64 bytes
+            c.setToServer("Confidentiality-Preserving authorized restrictions on info******"); //64 bytes
             encryptedMsgOut = Utilities.CBCEncrypt(c.getToServer(), c.getSessionKey(), c.getInitVector());
             HMACTagOut = Utilities.genHMAC(c.getSessionKey(), c.getClientID()).toString();
             //send messages
@@ -174,7 +174,7 @@ public class ClientMain {
             System.out.println("<----------");
             System.out.println();
             //*SEND*
-            c.setToServer("Availability: Ensuring timely and reliable access to information");
+            c.setToServer("Availability- Ensuring timely and reliable access to information");
             encryptedMsgOut = Utilities.CBCEncrypt(c.getToServer(), c.getSessionKey(), c.getInitVector());
             HMACTagOut = Utilities.genHMAC(c.getSessionKey(), c.getClientID()).toString();
             out.println(Base64.getEncoder().encodeToString(encryptedMsgOut));

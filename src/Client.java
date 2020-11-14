@@ -4,9 +4,6 @@
 //Date: 10/11/2020
 
 import java.math.BigInteger;
-import java.io.*;
-import java.net.*;
-import java.util.Base64;
 
 public class Client {
     //****Class variables*****
@@ -43,10 +40,6 @@ public class Client {
         return clientID;
     }
 
-    public void setClientID(String clientID) {
-        this.clientID = clientID;
-    }
-
     public String getFromServer() {
         return fromServer;
     }
@@ -75,10 +68,6 @@ public class Client {
         return serverRSAKey;
     }
 
-    public void setServerRSAKey(BigInteger[] serverRSAKey) {
-        this.serverRSAKey = serverRSAKey;
-    }
-
     public String getInitMsg() {
         return initMsg;
     }
@@ -91,24 +80,12 @@ public class Client {
         return serverRSASig;
     }
 
-    public void setServerRSASig(BigInteger serverRSASig) {
-        this.serverRSASig = serverRSASig;
-    }
-
     public BigInteger getClientPubDHKey() {
         return clientPubDHKey;
     }
 
-    public void setClientPubDHKey(BigInteger clientPubDHKey) {
-        this.clientPubDHKey = clientPubDHKey;
-    }
-
     public BigInteger getClientPrivDHKey() {
         return clientPrivDHKey;
-    }
-
-    public void setClientPrivDHKey(BigInteger clientPrivDHKey) {
-        this.clientPrivDHKey = clientPrivDHKey;
     }
 
     public BigInteger getSessionKey() {
@@ -131,16 +108,8 @@ public class Client {
         return initVector;
     }
 
-    public void setInitVector(byte[] initVector) {
-        this.initVector = initVector;
-    }
-
     public String getClientChallengeStr() {
         return clientChallengeStr;
-    }
-
-    public void setClientChallengeStr(String clientChallengeStr) {
-        this.clientChallengeStr = clientChallengeStr;
     }
 
     public byte[] getChallengeResponse() {

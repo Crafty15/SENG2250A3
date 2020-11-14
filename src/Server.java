@@ -4,9 +4,6 @@
 //Date: 10/11/2020
 
 import java.math.BigInteger;
-import java.io.*;
-import java.net.*;
-import java.util.Base64;
 
 public class Server {
     //****Class variables*****
@@ -40,10 +37,6 @@ public class Server {
         return serverID;
     }
 
-    public void setServerID(String serverID) {
-        this.serverID = serverID;
-    }
-
     public String getCurrentClientId() {
         return currentClientId;
     }
@@ -56,24 +49,12 @@ public class Server {
         return serverKeys;
     }
 
-    public void setServerKeys(BigInteger[][] serverKeys) {
-        this.serverKeys = serverKeys;
-    }
-
     public BigInteger getServerPrivDHKey() {
         return serverPrivDHKey;
     }
 
-    public void setServerPrivDHKey(BigInteger serverPrivDHKey) {
-        this.serverPrivDHKey = serverPrivDHKey;
-    }
-
     public BigInteger getServerPubDHKey() {
         return serverPubDHKey;
-    }
-
-    public void setServerPubDHKey(BigInteger serverPubDHKey) {
-        this.serverPubDHKey = serverPubDHKey;
     }
 
     public BigInteger getSessionKey() {
@@ -104,10 +85,6 @@ public class Server {
         return serverChallengeStr;
     }
 
-    public void setServerChallengeStr(String serverChallengeStr) {
-        this.serverChallengeStr = serverChallengeStr;
-    }
-
     public byte[] getClientChallenge() {
         return clientChallenge;
     }
@@ -116,19 +93,4 @@ public class Server {
         this.clientChallenge = clientChallenge;
     }
 
-    public BigInteger getServerP() {
-        return serverP;
-    }
-
-    public void setServerP(BigInteger serverP) {
-        this.serverP = serverP;
-    }
-
-    public BigInteger getServerQ() {
-        return serverQ;
-    }
-
-    public void setServerQ(BigInteger serverQ) {
-        this.serverQ = serverQ;
-    }
 }
