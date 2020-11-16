@@ -145,7 +145,7 @@ public class ClientMain {
             //create messages
             c.setToServer("Confidentiality-Preserving authorized restrictions on info******"); //64 bytes
             encryptedMsgOut = Utilities.CBCEncrypt(c.getToServer(), c.getSessionKey(), c.getInitVector());
-            HMACTagOut = Utilities.genHMAC(c.getSessionKey(), c.getClientID()).toString();
+            HMACTagOut = Utilities.genHMAC(c.getSessionKey(), c.getToServer()).toString();
             //send messages
             out.println(Base64.getEncoder().encodeToString(encryptedMsgOut));
             out.println(HMACTagOut);
@@ -159,11 +159,12 @@ public class ClientMain {
             //*RECEIVE*
             encryptedMsgIn = Base64.getDecoder().decode(in.readLine());
             HMACTagIn = in.readLine();
+            c.setFromServer(Utilities.CBCDecrypt(encryptedMsgIn, c.getSessionKey(), c.getInitVector()));
             System.out.println("<----------");
             System.out.println("Server to Client: ");
             System.out.println("Encrypted message: " + new String(encryptedMsgIn));
             //verify HMAC tag- close if false
-            if(!Utilities.verifyHMAC(c.getSessionKey(), c.getCurrentServerId(), new BigInteger(HMACTagIn))){
+            if(!Utilities.verifyHMAC(c.getSessionKey(), c.getFromServer(), new BigInteger(HMACTagIn))){
                 System.out.println("System has detected a bad HMAC. Closing connection....");
                 cSocket.close();
             }
@@ -176,7 +177,7 @@ public class ClientMain {
             //*SEND*
             c.setToServer("Availability- Ensuring timely and reliable access to information");
             encryptedMsgOut = Utilities.CBCEncrypt(c.getToServer(), c.getSessionKey(), c.getInitVector());
-            HMACTagOut = Utilities.genHMAC(c.getSessionKey(), c.getClientID()).toString();
+            HMACTagOut = Utilities.genHMAC(c.getSessionKey(), c.getToServer()).toString();
             out.println(Base64.getEncoder().encodeToString(encryptedMsgOut));
             out.println(HMACTagOut);
             System.out.println("---------->");
@@ -190,11 +191,12 @@ public class ClientMain {
             //*RECEIVE*
             encryptedMsgIn = Base64.getDecoder().decode(in.readLine());
             HMACTagIn = in.readLine();
+            c.setFromServer(Utilities.CBCDecrypt(encryptedMsgIn, c.getSessionKey(), c.getInitVector()));
             System.out.println("<----------");
             System.out.println("Server to Client: ");
             System.out.println("Encrypted message: " + new String(encryptedMsgIn));
             //verify HMAC tag- close if false
-            if(!Utilities.verifyHMAC(c.getSessionKey(), c.getCurrentServerId(), new BigInteger(HMACTagIn))){
+            if(!Utilities.verifyHMAC(c.getSessionKey(), c.getFromServer(), new BigInteger(HMACTagIn))){
                 System.out.println("System has detected a bad HMAC. Closing connection....");
                 cSocket.close();
             }

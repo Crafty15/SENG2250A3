@@ -78,35 +78,37 @@ public class ServerMain {
             //*RECEIVE*
             encryptedMsgIn = Base64.getDecoder().decode(in.readLine());
             HMACTagIn = in.readLine();
+            String decryptedFromClient = Utilities.CBCDecrypt(encryptedMsgIn, s.getSessionKey(), s.getInitVector());
             //verify HMAC - close connection if false
-            if(!Utilities.verifyHMAC(s.getSessionKey(), s.getCurrentClientId(), new BigInteger(HMACTagIn))){
+            if(!Utilities.verifyHMAC(s.getSessionKey(), decryptedFromClient, new BigInteger(HMACTagIn))){
                 System.out.println("Server has detected a bad HMAC. Closing connection....");
                 sSocket.close();
             }
-            System.out.println("Decrypted msg: " + Utilities.CBCDecrypt(encryptedMsgIn, s.getSessionKey(), s.getInitVector()));
+            System.out.println("Decrypted msg: " + decryptedFromClient);
 
             //*SEND*
             //create msg
             output = "Integrity- Guarding against improper information modification***";
             encryptedMsgOut = Utilities.CBCEncrypt(output, s.getSessionKey(), s.getInitVector());
-            HMACTagOut = Utilities.genHMAC(s.getSessionKey(), s.getServerID()).toString();
+            HMACTagOut = Utilities.genHMAC(s.getSessionKey(), output).toString();
             out.println(Base64.getEncoder().encodeToString(encryptedMsgOut));
             out.println(HMACTagOut);
 
             //*RECEIVE*
             encryptedMsgIn = Base64.getDecoder().decode(in.readLine());
             HMACTagIn = in.readLine();
+            decryptedFromClient = Utilities.CBCDecrypt(encryptedMsgIn, s.getSessionKey(), s.getInitVector());
             //verify HMAC - close connection if false
-            if(!Utilities.verifyHMAC(s.getSessionKey(), s.getCurrentClientId(), new BigInteger(HMACTagIn))){
+            if(!Utilities.verifyHMAC(s.getSessionKey(), decryptedFromClient, new BigInteger(HMACTagIn))){
                 System.out.println("Server has detected a bad HMAC. Closing connection....");
                 sSocket.close();
             }
-            System.out.println("Decrypted msg: " + Utilities.CBCDecrypt(encryptedMsgIn, s.getSessionKey(), s.getInitVector()));
+            System.out.println("Decrypted msg: " + decryptedFromClient);
 
             //*SEND*
             output = "These three concepts are often referred to as the CIA triad*****";
             encryptedMsgOut = Utilities.CBCEncrypt(output, s.getSessionKey(), s.getInitVector());
-            HMACTagOut = Utilities.genHMAC(s.getSessionKey(), s.getServerID()).toString();
+            HMACTagOut = Utilities.genHMAC(s.getSessionKey(), output).toString();
             out.println(Base64.getEncoder().encodeToString(encryptedMsgOut));
             out.println(HMACTagOut);
             //Close connection
